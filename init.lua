@@ -172,8 +172,20 @@ vim.o.shiftwidth = 2 -- Number of spaces for each indent level
 vim.o.softtabstop = 2 -- Number of spaces a <Tab> inserts
 vim.o.expandtab = true -- Convert tabs to spaces
 
--- 모든 플로팅 윈도우에 둥근 테두리 설정
 vim.o.winborder = 'rounded'
+
+vim.diagnostic.config {
+  float = {
+    source = true,
+    border = 'rounded',
+    format = function(diagnostic)
+      if diagnostic.code then
+        return string.format('%s [%s]', diagnostic.message, tostring(diagnostic.code))
+      end
+      return diagnostic.message
+    end,
+  },
+}
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -428,7 +440,11 @@ require('lazy').setup({
           --   i = { ['<c-enter>'] = 'to_fuzzy_refine' },
           -- },
         },
-        -- pickers = {}
+        pickers = {
+          colorscheme = {
+            enable_preview = true,
+          },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -465,7 +481,7 @@ require('lazy').setup({
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
         builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
           winblend = 10,
-          previewer = false,
+          previewer = true,
         })
       end, { desc = '[/] Fuzzily search in current buffer' })
 
@@ -508,6 +524,7 @@ require('lazy').setup({
       {
         'mason-org/mason.nvim',
         opts = {
+          PATH = 'prepend',
           ui = {
             icons = {
               package_installed = '✓',
@@ -665,7 +682,7 @@ require('lazy').setup({
       vim.diagnostic.config {
         severity_sort = true,
         float = { border = 'rounded', source = 'if_many' },
-        underline = { severity = vim.diagnostic.severity.ERROR },
+        underline = { severity = { min = vim.diagnostic.severity.WARN } },
         signs = vim.g.have_nerd_font and {
           text = {
             [vim.diagnostic.severity.ERROR] = '󰅚 ',
@@ -675,14 +692,20 @@ require('lazy').setup({
           },
         } or {},
         virtual_text = {
+          severity = { min = vim.diagnostic.severity.WARN },
           source = 'if_many',
           spacing = 2,
           format = function(diagnostic)
+            local base_message = diagnostic.message
+            if diagnostic.code then
+              base_message = string.format('%s (%s)', diagnostic.message, diagnostic.code)
+            end
+
             local diagnostic_message = {
-              [vim.diagnostic.severity.ERROR] = diagnostic.message,
-              [vim.diagnostic.severity.WARN] = diagnostic.message,
-              [vim.diagnostic.severity.INFO] = diagnostic.message,
-              [vim.diagnostic.severity.HINT] = diagnostic.message,
+              [vim.diagnostic.severity.ERROR] = base_message,
+              [vim.diagnostic.severity.WARN] = base_message,
+              [vim.diagnostic.severity.INFO] = base_message,
+              [vim.diagnostic.severity.HINT] = base_message,
             }
             return diagnostic_message[diagnostic.severity]
           end,
@@ -807,6 +830,8 @@ require('lazy').setup({
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd' },
+        typescript = { 'prettierd' },
       },
     },
   },
@@ -962,9 +987,20 @@ require('lazy').setup({
     config = function()
       ---@diagnostic disable-next-line: missing-fields
       require('catppuccin').setup {
+        no_italic = true,
         styles = {
           comments = {}, -- Disable italics in comments
         },
+        lsp_styles = {
+          underlines = {
+            errors = { 'undercurl' },
+            hints = { 'undercurl' },
+            warnings = { 'undercurl' },
+            information = { 'undercurl' },
+            ok = { 'undercurl' },
+          },
+        },
+        auto_integrations = true,
       }
 
       -- Load the colorscheme here.
